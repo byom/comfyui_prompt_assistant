@@ -6,21 +6,25 @@ from io import BytesIO
 from PIL import Image
 
 class LLMVisionService:
-    BASE_URL = 'https://open.bigmodel.cn/api/paas/v4/chat/completions'
-    MODEL = 'glm-4v-flash'
+    BASE_URL = 'https://generativelanguage.googleapis.com/v1beta/models'
+    MODEL = 'gemini-2.5-flash'
     
     @staticmethod
-    def _make_request(url, headers, json_data):
+    def _make_request(url, json_data, api_key):
         """
-        统一处理请求，包含代理处理逻辑
+        统一处理Gemini API请求
         """
         try:
             # 禁用系统代理
             session = requests.Session()
             session.trust_env = False
-            
+
+            # Gemini API使用URL参数传递API key
+            params = {'key': api_key}
+            headers = {'Content-Type': 'application/json'}
+
             # 发送请求
-            response = session.post(url, headers=headers, json=json_data, timeout=30)
+            response = session.post(url, headers=headers, json=json_data, params=params, timeout=30)
             return response
         except requests.exceptions.ProxyError as e:
             # 处理代理错误
@@ -28,7 +32,7 @@ class LLMVisionService:
             # 尝试不使用代理直接连接
             try:
                 proxies = {'http': None, 'https': None}
-                response = requests.post(url, headers=headers, json=json_data, proxies=proxies, timeout=30)
+                response = requests.post(url, headers=headers, json=json_data, params=params, proxies=proxies, timeout=30)
                 return response
             except Exception as direct_error:
                 raise Exception(f"直接连接也失败: {str(direct_error)}")
@@ -38,41 +42,41 @@ class LLMVisionService:
     @staticmethod
     def analyze_image(image_data, request_id=None, lang='zh'):
         """
-        使用GLM-4V分析图像
+        使用Gemini Vision分析图像
         """
         try:
             # 获取配置
             from ..config_manager import config_manager
             config = config_manager.get_llm_config()
-            
+
             api_key = config.get('api_key')
             if not api_key:
-                return {"success": False, "error": "请先配置LLM API密钥"}
-            
+                return {"success": False, "error": "请先配置Gemini API密钥"}
+
             # 加载系统提示词
             def load_system_prompts():
                 # 获取当前目录
                 current_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
                 # 构建提示词文件路径
                 prompts_path = os.path.join(current_dir, "js", "config", "system_prompts.json")
-                
+
                 if not os.path.exists(prompts_path):
                     raise Exception(f"系统提示词配置文件不存在: {prompts_path}")
-                
+
                 # 从文件加载提示词
                 with open(prompts_path, "r", encoding="utf-8") as f:
                     return json.load(f)
-            
+
             # 获取系统提示词
             system_prompts = load_system_prompts()
             if not system_prompts or 'vision_prompts' not in system_prompts:
                 return {"success": False, "error": "视觉系统提示词加载失败"}
-            
+
             # 获取对应语言的提示词
             lang_key = lang.upper()
             if lang_key not in system_prompts['vision_prompts']:
                 return {"success": False, "error": f"未找到语言 {lang} 的提示词配置"}
-            
+
             prompt_text = system_prompts['vision_prompts'][lang_key]['content']
             
             # 处理图像数据
@@ -111,56 +115,52 @@ class LLMVisionService:
             except Exception as e:
                 return {"success": False, "error": f"图像数据处理失败: {str(e)}"}
             
-            # 构建请求
-            headers = {
-                'Content-Type': 'application/json',
-                'Authorization': f'Bearer {api_key}'
-            }
-            
-            messages = [{
-                "role": "user",
-                "content": [
-                    {
-                        "type": "text",
-                        "text": prompt_text
-                    },
-                    {
-                        "type": "image_url",
-                        "image_url": {
-                            "url": f"data:image/jpeg;base64,{image_base64}"
-                        }
-                    }
-                ]
-            }]
-            
+            # 构建Gemini Vision API请求
+            url = f"{LLMVisionService.BASE_URL}/{LLMVisionService.MODEL}:generateContent"
+
             data = {
-                "model": LLMVisionService.MODEL,
-                "messages": messages,
-                "request_id": request_id or f"vision_{hash(image_base64[:100])}"
+                "contents": [{
+                    "parts": [
+                        {
+                            "text": prompt_text
+                        },
+                        {
+                            "inline_data": {
+                                "mime_type": "image/jpeg",
+                                "data": image_base64
+                            }
+                        }
+                    ]
+                }],
+                "generationConfig": {
+                    "temperature": 0.4,
+                    "topP": 0.8,
+                    "maxOutputTokens": 1024
+                }
             }
-            
+
             # 发送请求
-            response = LLMVisionService._make_request(LLMVisionService.BASE_URL, headers, data)
-            
+            response = LLMVisionService._make_request(url, data, api_key)
+
             # 检查HTTP响应状态码
             if response.status_code != 200:
-                return {"success": False, "error": f"HTTP请求失败: 状态码 {response.status_code}"}
-            
+                return {"success": False, "error": f"HTTP请求失败: 状态码 {response.status_code} - {response.text}"}
+
             # 解析JSON响应
             try:
                 result = response.json()
             except Exception as e:
                 return {"success": False, "error": f"解析响应JSON失败: {str(e)}"}
-            
+
             # 检查错误
             if 'error' in result:
                 return {"success": False, "error": result['error'].get('message', '图像分析请求失败')}
-            
+
             # 处理结果
-            if 'choices' not in result or not result['choices'] or 'message' not in result['choices'][0]:
-                return {"success": False, "error": "GLM-4V响应格式错误: 缺少choices/message字段"}
-                
-            description = result['choices'][0]['message']['content']
+            if 'candidates' not in result or not result['candidates']:
+                return {"success": False, "error": "Gemini Vision响应格式错误: 缺少candidates字段"}
+
+            description = result['candidates'][0]['content']['parts'][0]['text']
             
             return {
                 "success": True,

@@ -51,8 +51,14 @@ async def get_baidu_translate_config(request):
 
 @PromptServer.instance.routes.get(f'{API_PREFIX}/config/llm')
 async def get_llm_config(request):
-    """获取LLM配置"""
+    """获取LLM配置（兼容性接口）"""
     config = config_manager.get_llm_config()
+    return web.json_response(config)
+
+@PromptServer.instance.routes.get(f'{API_PREFIX}/config/gemini')
+async def get_gemini_config(request):
+    """获取Gemini配置"""
+    config = config_manager.get_gemini_config()
     return web.json_response(config)
 
 @PromptServer.instance.routes.post(f'{API_PREFIX}/config/baidu_translate')
@@ -89,21 +95,39 @@ async def update_baidu_translate_config(request):
 
 @PromptServer.instance.routes.post(f'{API_PREFIX}/config/llm')
 async def update_llm_config(request):
-    """更新LLM配置"""
+    """更新LLM配置（兼容性接口）"""
     try:
         data = await request.json()
         api_key = data.get('api_key')
-        
+
         if not api_key:
             return web.json_response({'error': '参数不完整'}, status=400)
-            
+
         success = config_manager.update_llm_config(api_key)
         if success:
             return web.json_response({'message': '配置已更新'})
         else:
             return web.json_response({'error': '配置更新失败'}, status=500)
     except Exception as e:
-        return web.json_response({'error': str(e)}, status=500) 
+        return web.json_response({'error': str(e)}, status=500)
+
+@PromptServer.instance.routes.post(f'{API_PREFIX}/config/gemini')
+async def update_gemini_config(request):
+    """更新Gemini配置"""
+    try:
+        data = await request.json()
+        api_key = data.get('api_key')
+
+        if not api_key:
+            return web.json_response({'error': '参数不完整'}, status=400)
+
+        success = config_manager.update_gemini_config(api_key)
+        if success:
+            return web.json_response({'message': '配置已更新'})
+        else:
+            return web.json_response({'error': '配置更新失败'}, status=500)
+    except Exception as e:
+        return web.json_response({'error': str(e)}, status=500)
 
 # 新增API路由
 

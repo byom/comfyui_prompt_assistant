@@ -20,10 +20,21 @@
 
 ## 📣更新
 <details>
+ <summary>[2025-7-10]V1.1.0： </summary>
+
+- 🔥 重大更新：将大语言模型从智谱AI迁移到Google Gemini
+- ✨ 支持Google Gemini 2.5 Flash API进行提示词扩写和翻译
+- ✨ 支持Google Gemini 2.5 Flash Vision进行图片反推提示词
+- 🔧 更新配置管理，支持Gemini API Key配置
+- 📚 更新文档和配置说明
+- 🔄 保持向后兼容，旧的LLM配置仍然有效
+
+</details>
+<details>
  <summary>[2025-6-24]V1.0.6： </summary>
-  
+
 - 修复了一些界面bug
-  
+
 </details>
 <details>
  <summary>[2025-6-24]V1.0.5： </summary>
@@ -105,24 +116,26 @@
 2. 重启 ComfyUI
 
 ## ⚙️ 配置说明
-目前小助手的翻译功能支持百度和智谱两种翻译服务，都是免费的。百度机翻速度快，智谱则是 AI翻译，更加准确。你可以根据自己的需求，进行切换 。而扩写和提示词反推则必须要使用智谱的服务来实现。  
-申请教程，可查看作者 B 站视频：<a href="https://space.bilibili.com/520680644"><img src="https://img.shields.io/badge/B%E7%AB%99-%E4%BD%BF%E7%94%A8%E8%AF%B4%E6%98%8E-blue?logo=bilibili&logoColor=2300A5DC&labelColor=%23FFFFFF"></a>
+目前小助手的翻译功能支持百度和Google Gemini两种翻译服务。百度机翻速度快，Google Gemini则是 AI翻译，更加准确。你可以根据自己的需求，进行切换。而扩写和提示词反推则必须要使用Google Gemini的服务来实现。
 
-百度翻译申请入口：[通用文本翻译API链接](https://fanyi-api.baidu.com/product/11)   
+百度翻译申请入口：[通用文本翻译API链接](https://fanyi-api.baidu.com/product/11)
 
 ![百度](https://github.com/user-attachments/assets/f3fe2d2d-9507-4bff-887e-003f2e13a19c)
 
-智谱API申请入口：[智谱API申请](https://www.bigmodel.cn/invite?icode=Wz1tQAT40T9M8vwp%2F1db7nHEaazDlIZGj9HxftzTbt4%3D)
+Google Gemini API申请入口：[Google AI Studio](https://aistudio.google.com/app/apikey)
 
-硅基流动 api申请入口：[硅基流动API申请](https://cloud.siliconflow.cn/i/FCDL2zBQ)  
+获取Google Gemini API Key的步骤：
+1. 访问 [Google AI Studio](https://aistudio.google.com/app/apikey)
+2. 使用Google账号登录
+3. 点击"Create API Key"按钮
+4. 选择一个Google Cloud项目（或创建新项目）
+5. 复制生成的API Key
 
-![智谱](https://github.com/user-attachments/assets/d6eb29c0-8624-4bf2-96c4-33e99d096202)
+#### 填入App id 、密钥、Gemini API key
 
-
-
-#### 填入App id 、密钥、大模型API key
-
-![设置](https://github.com/user-attachments/assets/d30d7c34-b6c6-4627-a554-ef7eee2f9cfb)
+在插件设置中填入：
+- 百度翻译：App ID 和 Secret Key
+- Google Gemini：API Key
 
 
 

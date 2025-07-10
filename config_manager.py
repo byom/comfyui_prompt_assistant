@@ -9,12 +9,12 @@ class ConfigManager:
         
         # 默认配置
         self.default_config = {
-            "__comment": "请在下方配置百度翻译和智谱AI的API密钥",
+            "__comment": "请在下方配置百度翻译和Google Gemini的API密钥",
             "baidu_translate": {
                 "app_id": "",
                 "secret_key": ""
             },
-            "llm": {
+            "gemini": {
                 "api_key": ""
             }
         }
@@ -53,10 +53,18 @@ class ConfigManager:
         return config.get("baidu_translate", self.default_config["baidu_translate"])
     
     def get_llm_config(self):
-        """获取LLM配置"""
+        """获取LLM配置（兼容旧配置）"""
         config = self.load_config()
-        return config.get("llm", self.default_config["llm"])
-    
+        # 兼容旧的llm配置，如果存在则迁移到gemini
+        if "llm" in config and config["llm"].get("api_key"):
+            return config["llm"]
+        return config.get("gemini", self.default_config["gemini"])
+
+    def get_gemini_config(self):
+        """获取Gemini配置"""
+        config = self.load_config()
+        return config.get("gemini", self.default_config["gemini"])
+
     def update_baidu_translate_config(self, app_id, secret_key):
         """更新百度翻译配置"""
         config = self.load_config()
@@ -65,11 +73,15 @@ class ConfigManager:
             "secret_key": secret_key
         }
         return self.save_config(config)
-    
+
     def update_llm_config(self, api_key):
-        """更新LLM配置"""
+        """更新LLM配置（兼容性方法）"""
+        return self.update_gemini_config(api_key)
+
+    def update_gemini_config(self, api_key):
+        """更新Gemini配置"""
         config = self.load_config()
-        config["llm"] = {
+        config["gemini"] = {
             "api_key": api_key
         }
         return self.save_config(config)
